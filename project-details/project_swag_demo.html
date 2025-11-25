@@ -13,6 +13,7 @@ h1 { font-size: 2rem; margin-bottom: 0.5rem; }
 p { line-height: 1.6; }
 pre { background: #f0f0f0; padding: 1rem; border-radius: 6px; overflow-x: auto; }
 code { font-family: Consolas, monospace; }
+sombra { text-shadow: 2px 2px #808080;}    
 </style>
 </head>
 <body>
@@ -31,6 +32,25 @@ Este proyecto automatiza completamente el flujo de validación y compra en el si
 comparación de valores esperados vs reales, manejo de login, carrito de compras y finalización de orden.
 </p>
 
+
+<section>
+    
+    <h2> ¿Qué hace el script? </h2>
+
+
+<p>• Abre el sitio https://www.saucedemo.com</p>
+<p>• Inicia sesión con usuario y contraseña</p>
+<p>• Valida productos, nombres, precios y descripciones</p>
+<p>• Agrega un producto al carrito</p>
+<p>• Completa el proceso de compra</p>
+<p>• Muestra mensajes de validación en consola</p>
+<p>• Cierra el navegador al finalizar</p>
+    
+    
+    
+</section>
+
+    
 
 <h2>✔ Código del script</h2>
 <p>Este es el script completo utilizado para la automatización:</p>
@@ -333,7 +353,7 @@ finally:
 
 
     
-<h2>🔶 Instructivo para correr el script (Python 3.11.9 + Selenium) 🔶</h2>
+<h2> Instructivo para correr el script (Python 3.11.9 + Selenium) </h2>
     
 <p>Este instructivo explica cómo instalar todo lo necesario y ejecutar el script del demo Swag Labs (SauceDemo) usando Python 3.11.9 y Selenium:</p>
 
@@ -348,8 +368,8 @@ finally:
 
 <p>Durante la instalación asegúrate de marcar:</p>
 
-<p>☑️ Add python.exe to PATH</p>
-<p>☑️ Install pip</p>
+<p>• Add python.exe to PATH</p>
+<p>• Install pip</p>
     
 </section>
 
@@ -372,8 +392,8 @@ finally:
 
 <p>Abre CMD, PowerShell o Terminal, y ejecuta:</p>
 
-<p>☑️ pip install selenium</p>
-<p>☑️ pip install webdriver-manager</p>
+<p>• pip install selenium</p>
+<p>• pip install webdriver-manager</p>
     
 </section>
 
@@ -381,11 +401,11 @@ finally:
     
 <h2>✔ Crear la carpeta del proyecto</h2>
 
-<p>☑️ Crea una carpeta en tu escritorio o donde prefieras, por ejemplo:</p>  
+<p>• Crea una carpeta en tu escritorio o donde prefieras, por ejemplo:</p>  
 
 <p><u>C:\SwagDemo\</u></p>
 
-<p>☑️ Dentro coloca el script, por ejemplo:</p>  
+<p>• Dentro coloca el script, por ejemplo:</p>  
 
 <p><u>C:\SwagDemo\swag_demo.py</u></p>    
     
@@ -396,38 +416,24 @@ finally:
     
 <h2>✔ Ejecutar el script</h2>
 
-<p>☑️ Abre terminal dentro de la carpeta del proyecto:</p> 
+<p>• Abre terminal dentro de la carpeta del proyecto:</p> 
 
-<p style="background-color: #808080;">cd C:\SwagDemo</p>
+<p><sombra>cd C:\SwagDemo</sombra></p>
 
-<p>☑️ Y ejecuta:</p> 
+<p>• Y ejecuta:</p> 
 
-<p style="background-color: #808080;">python swag_demo.py</p>    
+<p><sombra>python swag_demo.py</sombra></p>    
     
     
 </section>       
 
-<section>
-    
-    <h2>🔶 ¿Qué hace el script? 🔶</h2>
-
-
-<p>☑️ Abre el sitio https://www.saucedemo.com</p>
-<p>☑️ Inicia sesión con usuario y contraseña</p>
-<p>☑️ Valida productos, nombres, precios y descripciones</p>
-<p>☑️ Agrega un producto al carrito</p>
-<p>☑️ Completa el proceso de compra</p>
-<p>☑️ Muestra mensajes de validación en consola</p>
-<p>☑️ Cierra el navegador al finalizar</p>
-    
-    
-    
-</section>      
+      
 
 </div>
 </body>
 
 </html>
+
 
 
 
