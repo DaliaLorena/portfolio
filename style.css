@@ -58,6 +58,18 @@ margin-top: 1rem;
 }
 
 
+<style>
+.image-box {
+    text-align: center; 
+    margin-top: 2rem;
+}
+
+.image-box img {
+    width: 300px;
+    height: auto;
+    border-radius: 10px;
+}
+</style>
 
 
 
