@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Automatización Swag Demo | Proyecto</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fafafa; color: #222; }
+header { padding: 1.5rem; border-bottom: 1px solid #ddd; text-align: center; }
+header a { text-decoration: none; color: #222; font-weight: bold; }
+.content { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+p { line-height: 1.6; }
+pre { background: #f0f0f0; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+code { font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+<a href="../index.html">⬅ Volver al portafolio</a>
+</header>
+
+
+<div class="content">
+<h1>Automatización E2E - Swag Demo</h1>
+
+
+<p>
+Este proyecto automatiza completamente el flujo de validación y compra en el sitio
+<strong>Swag Demo</strong> utilizando Selenium. Incluye validación de elementos, manejo de errores,
+comparación de valores esperados vs reales, manejo de login, carrito de compras y finalización de orden.
+</p>
+
+
+<h2>✔ Código del script</h2>
+<p>Este es el script completo utilizado para la automatización:</p>
+
+
+<pre><code># El script completo está incluido aquí para referencia.
+
+
+
+
+
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+import time
+import logging
+logging.disable(logging.CRITICAL)
+
+
+options = Options()
+options.add_argument("--start-maximized")
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-notifications")
+options.add_argument("--disable-infobars")
+options.add_argument("--disable-save-password-bubble")
+options.add_argument("--log-level=3")
+options.add_argument("--silent")
+options.add_experimental_option(
+"excludeSwitches", ["enable-logging", "enable-automation"])
+options.add_experimental_option('useAutomationExtension', False)
+options.add_argument("--incognito")
+...
+
+
+
+</code></pre>
+
+
+<p>
+Si deseas, puedo agregar capturas, evidencia, un resumen técnico, o exportar este proyecto como PDF para tu portafolio.
+</p>
+</div>
+</body>
+</html>
