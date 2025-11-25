@@ -43,6 +43,12 @@ comparación de valores esperados vs reales, manejo de login, carrito de compras
 
 
 
+
+# NOTA: Para la creación de los scripts de pruebas generalmente creo dos archivos python. Uno donde coloco funciones para cada paso genérico que puedo utilizar en diversos flujos y procesos
+# (ejemplo: inicio de sesión, compra de productos, editar datos de usuario, etc.) y después un script principal donde importo esas funciones, lo que hace que el mantenimiento y
+# la creación de nuevos scripts por procesos nuevos sea mucho más rápido. En este caso particular decidí crear un solo script para que sea más fácil la ejecución.
+
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -51,8 +57,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import TimeoutException
 import time
 import logging
 logging.disable(logging.CRITICAL)
@@ -82,7 +86,9 @@ driver = webdriver.Chrome(service=service, options=options)
 
 try:
 
-
+    # NOTA: Los xpaths y textos los guardo en un json para cargarlo en el script. En este caso no lo hice por la ruta del archivo json que se encuentra en mi equipo.
+    # Ejemplo de cómo cargaría el archivo json: with open("C:\\Mi Usuario\\Mi-equipo\\Desktop\\Docs Scripts\\xpaths_pruebas.json", 'r', encoding='utf-8') as file:
+    # config = json.load(file)
 
     xpaths_login = {
         "pagina_inicio": "/html/body/div/div/div[1]",
@@ -330,3 +336,4 @@ finally:
 </body>
 
 </html>
+
