@@ -2,7 +2,7 @@ body {
 font-family: Arial, sans-serif;
 margin: 0;
 padding: 0;
-background: #fafafa;
+background: #fdf0e6;
 color: #222;
 }
 
@@ -10,7 +10,8 @@ color: #222;
 header {
 text-align: center;
 padding: 2rem 1rem;
-border-bottom: 1px solid #ddd;
+background: f08e80;
+color:  black;   
 }
 
 
@@ -55,4 +56,5 @@ border: 1px solid #ddd;
 margin-top: 1rem;
 
 }
+
 
