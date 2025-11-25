@@ -49,13 +49,14 @@ transition: 0.2s;
 
 /* ===== Contacto ===== */
 .contact-card {
-background: #fff;
+background: ##e8e8e8;
 padding: 1.5rem;
 border-radius: 10px;
-border: 1px solid #ddd;
+border: 1px solid ##ee7967;
 margin-top: 1rem;
 
 }
+
 
 
 
