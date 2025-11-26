@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Automatización Swag Demo | Proyecto</title>
+<title>Automatización PUJ Bait | Proyecto</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fdf0e6; color: #222; }
 header { padding: 1.5rem; background: #f08e80; border-bottom: 1px solid #fdf0e6; text-align: center; }
@@ -24,13 +24,12 @@ sombra {  background-color: #ccccc8;
 
 
 <div class="content">
-<h1>Automatización E2E - Swag Demo</h1>
+<h1>Automatización Validación de Textos - PUJ Bait</h1>
 
 
 <p>
-Este proyecto automatiza completamente el flujo de validación y compra en el sitio
-<strong>Swag Demo</strong> utilizando Selenium. Incluye validación de elementos, manejo de errores,
-comparación de valores esperados vs reales, manejo de login, carrito de compras y finalización de orden.
+Este script automatiza la validación completa de textos
+<strong>PUJ e IFT</strong> n el sitio mibait.com, asegurando que los mensajes mostrados para cada recarga/oferta coincidan con lo esperado después de las actualizaciones de precios 2025.
 </p>
 
 
@@ -39,13 +38,13 @@ comparación de valores esperados vs reales, manejo de login, carrito de compras
     <h2> ¿Qué hace el script? </h2>
 
 
-<p>• Abre el sitio https://www.saucedemo.com</p>
-<p>• Inicia sesión con usuario y contraseña</p>
-<p>• Valida productos, nombres, precios y descripciones</p>
-<p>• Agrega un producto al carrito</p>
-<p>• Completa el proceso de compra</p>
-<p>• Muestra mensajes de validación en consola</p>
-<p>• Cierra el navegador al finalizar</p>
+<p>• Configura Chrome automáticamente usando WebDriver Manager y carga encabezados personalizados (headers) para acceder correctamente al sitio.</p>
+<p>• Lee XPaths y datos PUJ desde un archivo JSON, permitiendo mantener el script modular y fácil de actualizar.</p>
+<p>• Navega por todas las categorías de productos (Recargas, Paquetes, Planes, Internacional, Internet, B2B, etc.).s</p>
+<p>• Selecciona cada oferta y accede al detalle de su PUJ.</p>
+<p>• Extrae los textos reales del sitio.</p>
+<p>• Compara lo obtenido vs lo esperado (definido en el archivo JSON).</p>
+<p>• Guarda evidencia: Capturas de pantalla por cada oferta y Resultados organizados en un archivo CSV (uno nuevo por día/contador).</p>
     
     
     
@@ -65,285 +64,290 @@ comparación de valores esperados vs reales, manejo de login, carrito de compras
 
 
 
-# NOTA: Para la creación de los scripts de pruebas generalmente creo dos archivos python. Uno donde coloco funciones para cada paso genérico que puedo utilizar en diversos flujos y procesos
-# (ejemplo: inicio de sesión, compra de productos, editar datos de usuario, etc.) y después un script principal donde importo esas funciones, lo que hace que el mantenimiento y
-# la creación de nuevos scripts por procesos nuevos sea mucho más rápido. En este caso particular decidí crear un solo script para que sea más fácil la ejecución.
-
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import time
-import logging
-logging.disable(logging.CRITICAL)
+import os
+import json
+import sys
+import time
+import csv
+from datetime import datetime
+import os
+import json
+from selenium.webdriver.common.alert import Alert
+from colorama import init, Fore, Back, Style
+init(autoreset=True)
 
+csv_dir = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\PUJ\\Reporte Pruebas PUJ"
+os.makedirs(csv_dir, exist_ok=True)
+fecha_hora_actual = datetime.now().strftime("%Y-%m-%d")
+contador = 1
 
+while True:
+    csv_filename = f"resultados_pruebas_Cambio_de_Precios25_PUJ_{fecha_hora_actual}_{contador}.csv"
+    csv_path = os.path.join(csv_dir, csv_filename)
+    if not os.path.exists(csv_path):
+        break
+    contador += 1
+
+inicio = time.time()
+
+# Configurar Chrome
 options = Options()
 options.add_argument("--start-maximized")
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-notifications")
-options.add_argument("--disable-infobars")
-options.add_argument("--disable-save-password-bubble")
-options.add_argument("--log-level=3")
-options.add_argument("--silent")
-options.add_experimental_option(
-    "excludeSwitches", ["enable-logging", "enable-automation"])
-options.add_experimental_option('useAutomationExtension', False)
-options.add_argument("--incognito")
-prefs = {
-    "credentials_enable_service": False,
-    "profile.password_manager_enabled": False
-}
-options.add_experimental_option("prefs", prefs)
 
+
+# PANTALLA INVISIBLE:
+# options.add_argument("--headless=new")
+
+
+# Inicializar el navegador con WebDriver Manager
 service = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=service, options=options)
 
+# HEADERS:
+
+
+inicial_headers = {
+    "x-o-segment": "oaoh",
+    "X-Wmx-Test": "wmmxosg7siah0",
+    "ess_skip": "1",
+    "Authorization": "Basic b3JkZW5hcmlzOlpRclYjWGg3ZiRkYkszS0RmNA=="
+}
+
+driver.execute_cdp_cmd("Network.enable", {})
+
+driver.execute_cdp_cmd(
+    "Network.setExtraHTTPHeaders",
+    {"headers": inicial_headers}
+)
+
+# Crear carpeta para capturas
+ruta_capturas = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\PUJ"
+os.makedirs(ruta_capturas, exist_ok=True)
+
+# Cargar JSON XPATHS:
+with open("C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\xpaths_bait_puj.json", 'r', encoding='utf-8') as file:
+
+    config = json.load(file)
+
+
 try:
 
-    # NOTA: Los xpaths y textos los guardo en un json para cargarlo en el script. En este caso no lo hice por la ruta del archivo json que se encuentra en mi equipo.
-    # Ejemplo de cómo cargaría el archivo json: with open("C:\\Mi Usuario\\Mi-equipo\\Desktop\\Docs Scripts\\xpaths_pruebas.json", 'r', encoding='utf-8') as file:
-    # config = json.load(file)
+    xpaths = config["xpaths"]
+    puj_datos = config["puj_datos"]
 
-    xpaths_login = {
-        "pagina_inicio": "/html/body/div/div/div[1]",
-        "username":  "/html/body/div/div/div[2]/div[1]/div/div/form/div[1]/input",
-        "password": "/html/body/div/div/div[2]/div[1]/div/div/form/div[2]/input",
-        "login_boton": "/html/body/div/div/div[2]/div[1]/div/div/form/input",
-        "products": "/html/body/div/div/div/div[1]/div[2]/span"}
+    with open(csv_path, mode="w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            ["Pestaña", "Oferta", "Texto PUJ Esperado", "Texto PUJ Obtenido", "IFT Esperado", "IFT Obtenido"])
 
-    items = [
-        {"name": "Error en el nombre del producto",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[1]/div[2]/div[1]/a/div",
-         "description": "carry.allTheThings() with the sleek, streamlined Sly Pack that melds uncompromising style with unequaled laptop and tablet protection.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[1]/div[2]/div[1]/div",
-         "price": "$29.99",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[1]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[1]/div[2]/div[2]/button"},
-        {"name": "Sauce Labs Bike Light",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[2]/div[2]/div[1]/a/div",
-         "description": "A red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[2]/div[2]/div[1]/div",
-         "price": "$9.99",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[2]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[2]/div[2]/div[2]/button"},
-        {"name": "Sauce Labs Bolt T-Shirt",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[3]/div[2]/div[1]/a/div",
-         "description": "Get your testing superhero on with the Sauce Labs bolt T-shirt. From American Apparel, 100% ringspun combed cotton, heather gray with red bolt.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[3]/div[2]/div[1]/div",
-         "price": "Error en el precio",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[3]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[3]/div[2]/div[2]/button"},
-        {"name": "Sauce Labs Fleece Jacket",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[4]/div[2]/div[1]/a/div",
-         "description": "It's not every day that you come across a midweight quarter-zip fleece jacket capable of handling everything from a relaxing day outdoors to a busy day at the office.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[4]/div[2]/div[1]/div",
-         "price": "$49.99",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[4]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[4]/div[2]/div[2]/button"},
-        {"name": "Sauce Labs Onesie",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[5]/div[2]/div[1]/a/div",
-         "description": "Rib snap infant onesie for the junior automation engineer in development. Reinforced 3-snap bottom closure, two-needle hemmed sleeved and bottom won't unravel.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[5]/div[2]/div[1]/div",
-         "price": "$7.99",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[5]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[5]/div[2]/div[2]/button"},
-        {"name": "Test.allTheThings() T-Shirt (Red)",
-         "xpath_name": "/html/body/div/div/div/div[2]/div/div/div/div[6]/div[2]/div[1]/a/div",
-         "description": "Error en la descripción del producto.",
-         "xpath_description": "/html/body/div/div/div/div[2]/div/div/div/div[6]/div[2]/div[1]/div",
-         "price": "$15.99",
-         "xpath_price": "/html/body/div/div/div/div[2]/div/div/div/div[6]/div[2]/div[2]/div",
-         "add_cart": "/html/body/div/div/div/div[2]/div/div/div/div[6]/div[2]/div[2]/button"}
+    # Paso 1: Abrir la página
 
-    ]
-    xpaths_products = {
-        "add_cart_product": "/html/body/div/div/div/div[2]/div/div/div/div[2]/div[2]/div[2]/button",
-        "info_product": "A red light isn't the desired state in testing but it sure helps when riding your bike at night. Water-resistant with 3 lighting modes, 1 AAA battery included.",
-        "name_product": "Sauce Labs Bike Light",
-        "seleccionar_carrito": "/html/body/div/div/div/div[1]/div[1]/div[3]/a",
-        "contador_carrito": "/html/body/div/div/div/div[1]/div[1]/div[3]/a/span",
-        "nombre_producto": "/html/body/div/div/div/div[2]/div/div[1]/div[3]/div[2]/a/div",
-        "descripcion_producto": "/html/body/div/div/div/div[2]/div/div[1]/div[3]/div[2]/div[1]",
-        "precio_producto": "/html/body/div/div/div/div[2]/div/div[1]/div[3]/div[2]/div[2]",
-        "checkout_boton": "/html/body/div/div/div/div[2]/div/div[2]/button[2]",
-        "first_name": "/html/body/div/div/div/div[2]/div/form/div[1]/div[1]/input",
-        "last_name": "/html/body/div/div/div/div[2]/div/form/div[1]/div[2]/input",
-        "zip_code": "/html/body/div/div/div/div[2]/div/form/div[1]/div[3]/input",
-        "continue_boton": "/html/body/div/div/div/div[2]/div/form/div[2]/input",
-        "finish_boton": "/html/body/div/div/div/div[2]/div/div[2]/div[9]/button[2]",
-        "compra_finalizada": "/html/body/div/div/div/div[2]/h2",
-        "texto_finish": "Thank you for your order!"
+        # driver.get("https:\\mibait.com")
+        driver.get("https://mibait.com/")
+        time.sleep(5)
+        wait = WebDriverWait(driver, 60)
 
 
-    }
 
-    wait = WebDriverWait(driver, 30)
+        driver.execute_script("document.body.style.zoom='50%'")
 
-    driver.get("https://www.saucedemo.com/")
-    time.sleep(3)
+    # Captura:
+        driver.save_screenshot(os.path.join(
+            ruta_capturas, "01_pagina_inicio.png"))
 
-    # Inicio de sesión
+    # Paso 1.1: COOKIES
 
-    pagina_inicio = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_login["pagina_inicio"]))).text.strip()
+        driver.delete_all_cookies()
 
-    if pagina_inicio == "Swag Labs":
-        print(
-            f"🚀 Te encuentras en la página de inicio de sesión de {pagina_inicio} 🚀")
-
-    else:
-        print(f"La página no pudo abrirse")
-
-    username = wait.until(EC.element_to_be_clickable((By.XPATH, xpaths_login["username"]
-                                                      ))).send_keys("standard_user")
-    time.sleep(3)
-
-    password = wait.until(EC.element_to_be_clickable((By.XPATH, xpaths_login["password"]
-                                                      ))).send_keys("secret_sauce")
-    time.sleep(3)
-
-    login_boton = wait.until(EC.element_to_be_clickable((By.XPATH, xpaths_login["login_boton"]
-                                                         ))).click()
-    time.sleep(3)
-
-    products = wait.until(EC.element_to_be_clickable((By.XPATH, xpaths_login["products"]
-                                                      ))).text.strip()
-
-    assert products == "Products", f"❌ No se muestra 'Products', en lugar se muestra {products}"
-
-    print(f"✅ Se muestra la pantalla {products}")
-    time.sleep(3)
-
-    # Validación de productos:
-
-    for item in items:
-
-        # NOTA: Coloqué algunos errores para que se pueda apreciar cómo se muestra
-
-        print(f"🟰🟰🟰   Validando el producto: {item['name']} 🟰🟰🟰")
-
-        producto = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, item["xpath_name"]))).text.strip()
-        time.sleep(3)
-        if producto == item["name"]:
-
-            print(f"🟢 Se encuentra el producto: {producto}")
-        else:
-            print(
-                f"❌ El nombre del producto no es correcto. Se esperaba el nombre: {item['name']} y se muestra el nombre: {producto}")
-
-        descripcion_producto = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, item["xpath_description"]))).text.strip()
-        time.sleep(3)
-        if descripcion_producto == item["description"]:
-            print(
-                f"🟢 La descripción mostrada es correcta. La descripción es: {descripcion_producto}")
-        else:
-            print(
-                f"❌ La descripción mostrada es incorrecta. Se esperaba la descripción: {item['description']} y se muestra: {descripcion_producto}")
-
-        precio = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, item["xpath_price"]))).text.strip()
+        boton_aceptar = wait.until(
+            EC.presence_of_element_located((By.XPATH, xpaths["boton_aceptar"])))
+        boton_aceptar = driver.find_element(
+            By.XPATH, xpaths["boton_aceptar"])
+        print(boton_aceptar)
+        boton_aceptar.click()
         time.sleep(3)
 
-        # Se utiliza una función para normalizar el precio ya que tiene un salto de línea
+        driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
 
-        def normalizar(precio):
-            return "\n".join(linea.strip() for linea in precio.strip().splitlines() if linea.strip())
-        precio_producto = normalizar(precio)
-        if precio_producto == item["price"]:
+        puj = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, xpaths["puj"]))).click()
+        time.sleep(5)
+
+        altura_pagina = driver.execute_script(
+            "return document.body.scrollHeight;")
+        mitad_altura = altura_pagina / 2
+        driver.execute_script(
+            "window.scrollTo(0, " + str(mitad_altura) + ");")
+
+        start_index = next((i for i, r in enumerate(
+            puj_datos) if r["nombre"] == "Mi Bait $200 Portabilidad"), 0)
+
+        for idx, puj in enumerate(puj_datos[start_index:], start=2):
+
+            if puj["nombre"] == "Mi Bait $200":
+                mibait_prepago = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["mibait_prepago"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Paquete 6 meses":
+                paquetes_bait = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["paquetes_bait"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Mi Bait Europa $100":
+                bait_internacional = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["bait_internacional"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Plan Bait Salud":
+                planes_bait = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["planes_bait"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Mi Internet Móvil Bait $999":
+                bait_internet = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["bait_internet"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Mi Bait en casa Kit Inicial $999":
+                internet_casa = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["internet_casa"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Canjeo Ticket por 100 MB":
+                promociones = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["promociones"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Promo suma 7D 250 MB":
+                beneficios = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["beneficios"]))).click()
+                time.sleep(5)
+
+            elif puj["nombre"] == "Bait Negocios 3Gb":
+                b2b = wait.until(EC.element_to_be_clickable(
+                    (By.XPATH, xpaths["b2b"]))).click()
+                time.sleep(5)
+
+            ift_obtenido = wait.until(EC.element_to_be_clickable(
+                (By.XPATH, puj["xpath_ift"]))).text.strip()
+            time.sleep(3)
+
+            wait.until(EC.element_to_be_clickable(
+                (By.XPATH, puj["xpath_boton"]))).click()
+            time.sleep(5)
+
+            posicion_scroll = driver.execute_script(
+                "return window.pageYOffset;")
+
+            xpath_texto = driver.find_element(
+                By.XPATH, puj["xpath_texto"])
+            driver.execute_script(
+                "arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", xpath_texto)
+            time.sleep(5)
+
+            driver.save_screenshot(os.path.join(
+                ruta_capturas, f"{str(idx).zfill(2)}_{puj['nombre']}.png"))
+            time.sleep(3)
+
+            driver.execute_script(f"window.scrollTo(0,{posicion_scroll});")
+
+            wording_actual = wait.until(EC.element_to_be_clickable(
+                (By.XPATH, puj["xpath_texto"]))).text.strip()
+
+            def normalizar(texto):
+                return "\n".join(linea.strip() for linea in texto.strip().splitlines() if linea.strip())
+
+            esperado = normalizar(puj["mensaje_esperado"])
+            obtenido = normalizar(wording_actual)
+
+            if puj["nombre"] in ["Mi Bait $200 Portabilidad",  "Mi Nuevo Bait $90 Tel Lib", "SIM para recuperación de servicio por Robo, Extravío o Deterioro por Usuario Final", "eSIM para recuperación de servicio por Robo, Extravío, Daño por Usuario Final o cambio de SIM física a eSIM", "Mi Bait $100 Portabilidad", "SIM Portabilidad Telemarketing"]:
+                pestaña = "Mi nuevo Bait"
+            elif puj["nombre"] in ["SIM Portabilidad Telemarketing", "Mi Bait $200", "Mi Bait $125", "Mi Bait $100", "Mi Bait $60", "Mi Bait $50", "Mi Bait $30", "Mi Bait $20", "Mi Bait $10", "Mi Bait $198 NB28", "Mi Bait $49 NB28", "Mi Bait $299", "Mi Bait $300", "Mi Bait $230", "Mi Bait $120", "Mi Bait $349", "Mi Bait $250"]:
+                pestaña = "Mi Bait Prepago - Mi Bait"
+            elif puj["nombre"] in ["Paquete 6 meses", "Paquete 3 meses", "Paquete 12 meses Ilimitado", "Paquete 12 meses Ilimitado ST", "Paquete 12 meses", "Paquete 6 meses Ilimitado", "Paquete 3 meses Ilimitado", "Combo Bait 5GB x 6M"]:
+                pestaña = "Mi Bait Prepago - Paquetes Bait"
+            elif puj["nombre"] in ["Mi Bait Europa $100", "Mi Bait Latinoamérica $100", "Mi Bait Resto del Mundo $100", "Mi Bait Resto del Mundo $200", "Mi Bait América $349", "Mi Bait Internacional $399", "Mi Bait Internacional $699", "Mi Bait Internacional $999"]:
+                pestaña = "Mi Bait Prepago - Mi Bait Internacional"
+            elif puj["nombre"] in ["Plan Bait Salud", "Plan Bait Walmart Pass", "Plan Bait Sams's Benefits", "Plan Bait Portabilidad"]:
+                pestaña = "Planes Bait"
+            elif puj["nombre"] in ["Mi Internet Móvil Bait $999", "Mi Internet Portátil Bait 30", "Mi Internet Portátil Bait 10", "Mi Internet Portátil Bait 5"]:
+                pestaña = "Mi Bait Internet - Internet portátil"
+            elif puj["nombre"] in ["Mi Bait en casa Kit Inicial $999", "Mi Bait en Casa $349", "Mi Bait en Casa $99"]:
+                pestaña = "Mi Bait Internet - Internet en Casa"
+            elif puj["nombre"] in ["Canjeo Ticket por 100 MB", "Beneficios Sim Bait 50 a 20", "Plan México $50", "Tarjeta SIM Bait SAMs.COM", "Mi nuevo Bait $19 Membresía SAMs Plus", "Mi nuevo Bait $29 Membresía SAMs Benefits", "Mi nuevo bait $49 Membresía SAMs Clásica", "Mi Bait $200 Promoción Recurrencia", "Plan Bait Salud K", "Plan Walmart Pass K", "Plan Sam’s Benefits K"]:
+                pestaña = "Promociones"
+            elif puj["nombre"] in ["Promo suma 7D 250 MB", "Promo suma 7D 500 MB", "Promo suma 7D 1000 MB"]:
+                pestaña = "Beneficios"
+            elif puj["nombre"] in ["Bait Negocios 3Gb", "Bait Negocios 5Gb", "Bait Negocios 14Gb", "Bait Negocios 26Gb", "Bait Negocios 37Gb", "Internet Portátil Bait 5GB", "Internet Portátil Bait 10GB", "Internet Portátil Bait 30GB", "Internet Portátil Bait 50GB", "Internet Portátil Bait 80GB", "Internet Portátil Bait 100GB"]:
+                pestaña = "B2B"
+
+            else:
+                pestaña = "Bait"
+
+            message = puj["mensaje_esperado"] == wording_actual
+            getMessage = puj["ift_esperado"] == ift_obtenido
+
             print(
-                f"🟢 El precio mostrado es correcto. Se muestra el precio: {precio_producto} y se esperaba el precio: {item['price']}")
-        else:
-            print(
-                f"❌ El precio mostrado no es correcto. Se esperaba el precio: {item['price']} y se muestra el precio: {precio_producto}")
+                f" {Fore.MAGENTA + Style.BRIGHT}           ==={Style.RESET_ALL} {Fore.CYAN + Style.BRIGHT} {puj['nombre']}{Style.RESET_ALL}  ➖ {Style.RESET_ALL} {Fore.GREEN + Style.BRIGHT}{pestaña} {Style.RESET_ALL}{Fore.MAGENTA + Style.BRIGHT}==={Style.RESET_ALL}")
 
-        # Compra de un producto:
+            if message and getMessage:
 
-    print(f"💲💲💲  Comprando un producto 💲💲💲")
+                print(
+                    f"✅ El texto de la PUJ de la recarga de {puj['nombre']} es correcto, el texto es:\n{wording_actual}.\n✳️  El IFT es correcto ➡️   {ift_obtenido}")
 
-    # Validar si el carrito está vacío (Al agregar un producto al carrito se crea un elemento contador, al quitar el producto el elemento desaparece del DOM)
+                writer.writerow(
+                    [pestaña, puj["nombre"], "El texto es correcto", wording_actual, "El IFT es correcto", ift_obtenido])
 
-    try:
-        driver.find_element(
-            By.XPATH, xpaths_products["contador_carrito"])
-        print("❌ El carrito ya tiene un producto agregado")
-    except:
-        print("✅ El carrito está vacío.")
+            elif not message and not getMessage:
+                print(
+                    f"❌ El texto de la PUJ de la recarga {puj['nombre']} no coincide.\nEsperado: {puj['mensaje_esperado']}\nObtenido:\n {wording_actual}\n❌ El IFT de la PUJ de la recarga {puj['nombre']} no coincide.\nEsperado:\n {puj['ift_esperado']}\nObtenido:\n {ift_obtenido}")
+                writer.writerow(
+                    [pestaña, puj["nombre"], puj["mensaje_esperado"], wording_actual, puj["ift_esperado"], ift_obtenido])
 
-    agregar_carrito = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["add_cart_product"]))).click()
-    time.sleep(3)
+            else:
+                if not message:
+                    print(
+                        f"❌ El texto de la PUJ de la recarga {puj['nombre']} no coincide.\nEsperado: {puj['mensaje_esperado']}\nObtenido:\n {wording_actual}\n✳️  El IFT es correcto ➡️   {puj['ift_esperado']}")
 
-    # Validar si se agregó el producto al carrito:
+                    writer.writerow(
+                        [pestaña, puj["nombre"], puj["mensaje_esperado"], wording_actual, "El IFT es correcto", ift_obtenido])
 
-    try:
-        driver.find_element(
-            By.XPATH, xpaths_products["contador_carrito"])
-        print("✅ El producto se agregó al carrito")
-    except:
-        print("❌ El carrito está vacío.")
+                if not getMessage:
+                    print(
+                        f"❌ El IFT de la PUJ de la recarga {puj['nombre']} no coincide.\nEsperado:\n {puj['ift_esperado']}\nObtenido:\n {ift_obtenido}\n✅ El texto de la PUJ de la recarga de {puj['nombre']} es correcto, el texto es:\n{puj['mensaje_esperado']}.")
 
-    seleccionar_carrito = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["seleccionar_carrito"]))).click()
-    time.sleep(3)
+                    writer.writerow(
+                        [pestaña, puj["nombre"], "El texto es correcto", wording_actual, puj["ift_esperado"], ift_obtenido])
 
-    # Validar info del producto:
+            wait.until(EC.element_to_be_clickable(
+                (By.XPATH, puj["xpath_boton"]))).click()
+            time.sleep(5)
 
-    nombre_producto = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["nombre_producto"]))).text.strip()
-    if nombre_producto == xpaths_products["name_product"]:
-        print(
-            f"🟢 El nombre del producto es correcto: {nombre_producto}")
-    else:
-        print(
-            f"❌ El nombre del producto no es correcto. Se esperaba el nombre: {xpaths_products['name_product']} y se muestra el nombre: {nombre_producto}")
+        print("🟢✒️ Los textos de la PUJ se validaron correctamente")
+        fin = time.time()
+        tiempo_total = round((fin - inicio) / 60, 2)
 
-    checkout_boton = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["checkout_boton"]))).click()
-    time.sleep(3)
-
-    first_name = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["first_name"]))).send_keys("Usuario")
-    time.sleep(2)
-    last_name = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["last_name"]))).send_keys("Prueba")
-    time.sleep(2)
-    zip_code = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["zip_code"]))).send_keys("Prueba")
-    time.sleep(2)
-
-    continue_boton = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["continue_boton"]))).click()
-    time.sleep(3)
-
-    finish_boton = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["finish_boton"]))).click()
-    time.sleep(3)
-
-    compra_finalizada = wait.until(EC.element_to_be_clickable(
-        (By.XPATH, xpaths_products["compra_finalizada"]))).text.strip()
-
-    if compra_finalizada == xpaths_products["texto_finish"]:
-        print(
-            f"🟢 La compra se completó exitosamente: {compra_finalizada}")
-    else:
-        print(
-            f"❌ La compra no se finalizó")
-
-    print("❇️     Las pruebas se concluyeron mostrando los errores encontrados.")
+        print(f"\n⏰ Tiempo total de ejecución: {tiempo_total} minutos")
+        os.startfile(csv_path)
+        print("\n📋 Pruebas completadas. Resultados guardados en:", csv_path)
 
 except Exception as e:
     print("❌ Error durante la prueba:", repr(e))
+    driver.save_screenshot("capturas/99_error.png")
 
 finally:
+
     driver.quit()
 
 
@@ -354,83 +358,12 @@ finally:
 
 
     
-<h2> Instructivo para correr el script (Python 3.11.9 + Selenium) </h2>
-    
-<p>Este instructivo explica cómo instalar todo lo necesario y ejecutar el script del demo Swag Labs (SauceDemo) usando Python 3.11.9 y Selenium:</p>
 
-
-<section>
-    
-<h2> Python 3.11.9</h2>
-
-<p>Descargar desde:</p>
-        
-<p><u>https://www.python.org/downloads/release/python-3119/</u></p>
-
-<p>Durante la instalación asegúrate de marcar:</p>
-
-<p>• Add python.exe to PATH</p>
-<p>• Install pip</p>
-    
-</section>
-
-<section>
-    
-<h2> Google Chrome instalado</h2>
-
-<p>El script usa Chrome a través de Selenium WebDriver.</p>
-
-<p>Descarga desde:</p>
-    
-<p><u>https://www.google.com/chrome//</u></p>
-    
-</section>
-
-
-<section>
-    
-<h2> Instalar dependencias necesarias</h2>
-
-<p>Abre CMD, PowerShell o Terminal, y ejecuta:</p>
-
-<p>• pip install selenium</p>
-<p>• pip install webdriver-manager</p>
-    
-</section>
-
-<section>
-    
-<h2> Crear la carpeta del proyecto</h2>
-
-<p>• Crea una carpeta en tu escritorio o donde prefieras, por ejemplo:</p>  
-
-<p><u>C:\SwagDemo\</u></p>
-
-<p>• Dentro coloca el script, por ejemplo:</p>  
-
-<p><u>C:\SwagDemo\swag_demo.py</u></p>    
-    
-    
-</section>    
-
-<section>
-    
-<h2> Ejecutar el script</h2>
-
-<p>• Abre terminal dentro de la carpeta del proyecto:</p> 
-
-<p><sombra>cd C:\SwagDemo</sombra></p>
-
-<p>• Y ejecuta:</p> 
-
-<p><sombra>python swag_demo.py</sombra></p>    
-    
-    
-</section>       
 
       
 
 </div>
 </body>
+
 
 </html>
