@@ -32,8 +32,8 @@ padding: 1rem;
 .btn {
 display: inline-block;
 padding: 0.8rem 1.2rem;
-background: #e8e8e8;
-color: black;
+background: #c14f4f;
+color: white;
 text-decoration: none;
 border-radius: 10px;
 margin-top: 1.5rem;
@@ -42,8 +42,8 @@ transition: 0.2s;
 
 
 .btn:hover {
-    background: #c14f4f;
-    color: white;
+    background: #e8e8e8;
+    color: black;
 }
 
 
@@ -56,6 +56,7 @@ border: 1px solid ##ee7967;
 margin-top: 1rem;
 
 }
+
 
 
 
