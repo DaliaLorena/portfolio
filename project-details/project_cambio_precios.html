@@ -1,0 +1,210 @@
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+import time
+import os
+import requests
+import json
+import sys
+import logging
+import sys
+from Cambio_Precios_Funciones import (inicio_sesion, inicio_sesion_sso, validacion_wording, ventana_datos_pago,
+                                      ventana_datos_pago_2, ventana_pagar, datos_linea, seccion_recargas)
+from colorama import init, Fore, Back, Style
+init(autoreset=True)
+
+
+logging.disable(logging.CRITICAL)
+
+# Configurar Chrome
+options = Options()
+
+modo_main = "--desde-main" in sys.argv
+
+if not modo_main:
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+options.add_argument("--start-maximized")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--remote-debugging-port=9222")
+options.add_argument("--log-level=3")
+options.add_argument("--silent")
+options.add_experimental_option(
+    "excludeSwitches", ["enable-logging", "enable-automation"])
+options.add_experimental_option('useAutomationExtension', False)
+
+
+# PANTALLA INVISIBLE:
+# options.add_argument("--headless=new")
+
+
+prefs = {
+    "credentials_enable_service": False,
+    "profile.password_manager_enabled": False
+}
+options.add_experimental_option("prefs", prefs)
+
+# Inicializar el navegador con WebDriver Manager
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+
+
+# HEADERS:
+
+
+inicial_headers = {
+    "x-o-seg": "******",
+    "X-WTest": "************",
+    "Authorization": "Basic **************************"
+}
+
+driver.execute_cdp_cmd("Network.enable", {})
+
+driver.execute_cdp_cmd(
+    "Network.setExtraHTTPHeaders",
+    {"headers": inicial_headers}
+)
+
+
+# autorizathion_headers = {
+
+#     "Authorization": "Basic **************************""
+# }
+# driver.execute_cdp_cmd("Network.enable", {})
+# driver.execute_cdp_cmd(
+#     "Network.setExtraHTTPHeaders",
+#     {"headers": autorizathion_headers}
+# )
+
+
+# Crear carpeta para capturas
+ruta_capturas = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\Wording Prepago MBB"
+os.makedirs(ruta_capturas, exist_ok=True)
+
+# Cargar JSON XPATHS:
+with open("C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\xpaths_bait_cambio_de_precios.json", 'r', encoding='utf-8') as file:
+
+    config = json.load(file)
+
+
+try:
+
+    xpaths = config["xpaths"]
+    recargas_datos = config["recargas_datos"]
+
+    wait = WebDriverWait(driver, 60)
+
+    # INICIO DE SESIÓN EN QA CON CREDENCIALES:
+
+    # inicio_sesion(driver, wait, xpaths, ruta_capturas)
+
+    inicio_sesion_sso(driver, wait, xpaths, ruta_capturas)
+
+    time.sleep(5)
+    recargas = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["recargas"])))
+    recargas = driver.find_element(By.XPATH, xpaths["recargas"])
+    recargas.click()
+
+    # seccion_recargas(driver, wait, xpaths)
+
+    start_index = next((i for i, r in enumerate(
+        recargas_datos) if r["nombre"] == "$349"), 0)
+
+    idx = 4
+
+    errores = []
+
+    resultados = []
+
+    for recarga in recargas_datos[start_index:]:
+
+        if recarga["nombre"] == "$200":
+            altura_pagina = driver.execute_script(
+                "return document.body.scrollHeight;")
+            mitad_altura = altura_pagina / 2
+            driver.execute_script(
+                "window.scrollTo(0, " + str(mitad_altura) + ");")
+
+        elif recarga["nombre"] == "$60":
+            altura_pagina = driver.execute_script(
+                "return document.body.scrollHeight;")
+            mitad_altura = altura_pagina / 9
+            driver.execute_script(
+                "window.scrollTo(0, " + str(mitad_altura) + ");")
+
+    # VALIDACIÓN DEL WORDING:
+
+        print(
+            f"{Fore.MAGENTA + Style.BRIGHT}===      Ventana Datos {recarga['nombre']}   ===={Style.RESET_ALL}")
+
+        idx = validacion_wording(driver, wait, xpaths, ruta_capturas,
+                                 idx, errores, resultados, recarga)
+
+        idx = datos_linea(driver, wait, xpaths, ruta_capturas,
+                          idx, errores, resultados, recarga)
+
+        time.sleep(3)
+
+        modal_pago = driver.find_elements(By.XPATH, xpaths["nombre_tarjeta"])
+
+        if modal_pago:
+
+            print(
+                f"{Fore.MAGENTA + Style.BRIGHT}===      Ventana Modal de Pago {recarga['nombre']}   ===={Style.RESET_ALL}")
+
+            idx = ventana_datos_pago(driver, wait, xpaths, ruta_capturas,
+                                     idx, errores, resultados, recarga)
+
+            print(
+                f"{Fore.MAGENTA + Style.BRIGHT}===      Ventana Pagar {recarga['nombre']}   ===={Style.RESET_ALL}")
+
+            idx = ventana_pagar(driver, wait, xpaths, ruta_capturas,
+                                idx, errores, resultados, recarga)
+
+        else:
+
+            time.sleep(8)
+
+            print(
+                f"{Fore.MAGENTA + Style.BRIGHT}===      Ventana Modal de Pago {recarga['nombre']}   ===={Style.RESET_ALL}")
+
+            idx = ventana_datos_pago_2(driver, wait, xpaths,
+                                       ruta_capturas, idx, errores, resultados, recarga)
+
+    if errores:
+
+        print(
+            f"⚠️ Prueba de Cambio de Precios 2025 (Prepago MBB) completada con capturas.\nErrores encontrados en: ")
+        for nombre in errores:
+            print(f" - {nombre}")
+
+    else:
+
+        print("📷 🟢 Prueba de Cambio de Precios 2025 (Prepago MBB) completada con capturas.")
+
+
+except Exception as e:
+    print("❌ Error durante la prueba:", repr(e))
+    driver.save_screenshot("capturas/99_error.png")
+    resultados.append({
+        "oferta": "GENERAL",
+        "tipo": "Prepago",
+        "esperado": "-",
+        "obtenido": str(e),
+        "estado": "EXCEPTION"
+    })
+    sys.exit(1)
+
+finally:
+    with open("resultados_temp.json", "w", encoding="utf-8-sig") as f:
+        json.dump(resultados, f, ensure_ascii=False, indent=4)
+    driver.quit()
