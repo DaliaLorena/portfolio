@@ -1,3 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Automatización Cambio de Precios | Proyecto</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fafafa; color: #222; }
+header { padding: 1.5rem; border-bottom: 1px solid #ddd; text-align: center; }
+header a { text-decoration: none; color: #222; font-weight: bold; }
+.content { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+p { line-height: 1.6; }
+pre { background: #f0f0f0; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+code { font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+<a href="../index.html">⬅ Volver al portafolio</a>
+</header>
+
+
+<div class="content">
+<h1>Automatización Cambio de Precios - Recargas</h1>
+
+
+<p>
+Este proyecto automatiza la validación de los nuevos textos de los productos de recargas
+<strong>Bait</strong> utilizando Selenium. Incluye validación de elementos, manejo de errores,
+comparación de valores esperados vs reales y manejo de login.
+</p>
+
+
+<h2>✔ Código del script</h2>
+<p>Este es el script completo utilizado para la automatización:</p>
+
+
+<pre><code>
+
+
+
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -208,3 +250,16 @@ finally:
     with open("resultados_temp.json", "w", encoding="utf-8-sig") as f:
         json.dump(resultados, f, ensure_ascii=False, indent=4)
     driver.quit()
+
+
+
+
+
+
+</code></pre>
+
+
+
+</div>
+</body>
+</html>
