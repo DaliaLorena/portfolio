@@ -1,0 +1,313 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+import os
+import json
+import sys
+from colorama import init, Fore, Back, Style
+init(autoreset=True)
+
+
+ruta_capturas = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\Wording Prepago MBB"
+os.makedirs(ruta_capturas, exist_ok=True)
+
+
+with open("C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Cambio de Precios 2025\\xpaths_bait_cambio_de_precios.json", 'r', encoding='utf-8') as file:
+
+    config = json.load(file)
+
+
+xpaths = config["xpaths"]
+recargas_datos = config["recargas_datos"]
+paquetes_datos = config["paquetes_datos"]
+paquetes_int_datos = config["paquetes_int_datos"]
+mifi_datos = config["mifi_datos"]
+hbb_datos = config["hbb_datos"]
+sim_datos = config["sim_datos"]
+esim_datos = config["esim_datos"]
+empresarial_datos = config["empresarial_datos"]
+asociados_datos = config["asociados_datos"]
+
+
+# INICIO DE SESIÓN SSO:
+
+def inicio_sesion_sso(driver, wait, xpaths, ruta_capturas):
+
+ 
+    driver.get("https://mibait.com/login")
+    time.sleep(5)
+
+    driver.execute_script("document.body.style.zoom='100%'")
+    time.sleep(2)
+
+    driver.save_screenshot(os.path.join(ruta_capturas, "01_pagina_inicio.png"))
+
+    driver.delete_all_cookies()
+
+    boton_aceptar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["boton_aceptar"])))
+    boton_aceptar = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar"])
+    print(boton_aceptar)
+    boton_aceptar.click()
+
+    username = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["username"])))
+    username = driver.find_element(By.XPATH, xpaths["username"])
+    username.send_keys("8149007812")
+    time.sleep(5)
+    wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+
+    boton_validar = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["boton_validar"]))).click()
+    wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+    time.sleep(3)
+
+    password = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["password"])))
+    password = driver.find_element(By.XPATH, xpaths["password"])
+    password.send_keys("Pruebas.01")
+    time.sleep(3)
+    anuncio_bait = wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+
+    driver.save_screenshot(os.path.join(ruta_capturas, "02_credenciales.png"))
+
+    boton_ingresar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["boton_ingresar"])))
+    boton_ingresar = driver.find_element(By.XPATH, xpaths["boton_ingresar"])
+    boton_ingresar.click()
+    time.sleep(5)
+
+    element = wait.until(
+        EC.element_to_be_clickable((By.XPATH, xpaths["element"])))
+    element = driver.find_element(
+        By.XPATH, xpaths["element"])
+    if "Datos de consumo" in element.text:
+
+        print("✅ Inicio de sesión exitoso.")
+
+        print("✒️   Sección Datos de Consumo")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra la pantalla Datos de Consumo. Texto que muestra: {element.text}")
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, "03_Datos_de_Consumo.png"))
+
+
+
+
+# VENTANAS DE PAGO:
+
+
+def ventana_datos_pago(driver, wait, xpaths, ruta_capturas, idx, errores, resultados, recarga):
+
+    wait.until(EC.invisibility_of_element(
+        (By.XPATH, xpaths["anuncio_bait_2"])))
+
+    time.sleep(2)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx).zfill(2)}_Ventana_Pago_{recarga['nombre']}.png"))
+    idx += 1
+
+    wording_actual = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["xpath_texto"]))).text.strip() + " " + wait.until(EC.element_to_be_clickable(
+            (By.XPATH, xpaths["xpath_texto_PUJ"]))).text.strip()
+
+    if recarga["mensaje_esperado"] + " " + xpaths["texto_PUJ"] == wording_actual:
+        print(
+            f"✅ El wording de la recarga de {recarga['nombre']} es correcto, el wording es: {recarga['mensaje_esperado']}  {xpaths['texto_PUJ']}")
+    else:
+        print(
+            f"❌{Fore.RED + Style.BRIGHT}  El wording de la recarga {recarga['nombre']} no coincide.\nEsperado:{Style.RESET_ALL} {recarga['mensaje_esperado']} {xpaths['texto_PUJ']}\n{Fore.RED + Style.BRIGHT}Obtenido:{Style.RESET_ALL} {wording_actual}")
+
+        errores.append(recarga['nombre'])
+
+    wording_obtenido = wording_actual
+    estado = "OK" if recarga["mensaje_esperado"] + " " + \
+        xpaths["texto_PUJ"] == wording_obtenido else "ERROR"
+
+    if estado == "OK":
+
+        print(
+            f"☑️      {Fore.GREEN + Style.BRIGHT}{recarga['nombre']}: Correcto{Style.RESET_ALL}")
+    else:
+
+        print(
+            f"☑️      {Fore.RED + Style.BRIGHT}{recarga['nombre']}: Incorrecto{Style.RESET_ALL}")
+
+    resultados.append({
+        "oferta": recarga["nombre"],
+        "tipo": "Prepago",
+        "esperado": recarga["mensaje_esperado"],
+        "obtenido": wording_obtenido,
+        "estado": estado
+    })
+
+    time.sleep(5)
+
+    nombre_tarjeta = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["nombre_tarjeta"]))).send_keys("Lorena Torres")
+    numero_tarjeta = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["numero_tarjeta"]))).send_keys("5555 5555 5555 4444")
+    mm_aa = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["mm_aa"]))).send_keys("0626")
+    cvv = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["cvv"]))).send_keys("123")
+    direccion = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["direccion"]))).send_keys("Martin Mendalde 1114")
+    cp = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["cp"]))).send_keys("03104")
+    time.sleep(3)
+    colonia_1 = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["colonia_1"]))).click()
+    colonia_2 = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["colonia_2"]))).click()
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx).zfill(2)}_Datos_Pago_{recarga['nombre']}.png"))
+    idx += 1
+
+    time.sleep(3)
+
+    ver_detalles = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["ver_detalles"]))).click()
+    time.sleep(3)
+
+    return idx
+
+
+def ventana_pagar(driver, wait, xpaths, ruta_capturas, idx, errores, resultados, recarga):
+
+    wait.until(EC.invisibility_of_element(
+        (By.XPATH, xpaths["anuncio_bait_2"])))
+
+    time.sleep(5)
+
+    contenedor_modal = driver.find_element(
+        By.XPATH, xpaths["contenedor_modal"])
+
+    driver.execute_script(
+        "arguments[0].scrollTop = 0;", contenedor_modal)
+
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx).zfill(2)}_Ventana_Pagar_{recarga['nombre']}.png"))
+    idx += 1
+
+    wording_actual = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["xpath_texto"]))).text.strip() + " " + wait.until(EC.element_to_be_clickable(
+            (By.XPATH, xpaths["xpath_texto_PUJ"]))).text.strip()
+
+    if recarga["mensaje_esperado"] + " " + xpaths["texto_PUJ"] == wording_actual:
+        print(
+            f"✅ El wording de la recarga de {recarga['nombre']} es correcto, el wording es: {recarga['mensaje_esperado']}  {xpaths['texto_PUJ']}")
+    else:
+        print(
+            f"❌{Fore.RED + Style.BRIGHT} El wording de la recarga {recarga['nombre']} no coincide.\nEsperado:{Style.RESET_ALL} {recarga['mensaje_esperado']} {xpaths['texto_PUJ']}\n{Fore.RED + Style.BRIGHT}Obtenido:{Style.RESET_ALL} {wording_actual}")
+
+        errores.append(recarga['nombre'])
+
+    wording_obtenido = wording_actual
+    estado = "OK" if recarga["mensaje_esperado"] + " " + \
+        xpaths["texto_PUJ"] == wording_obtenido else "ERROR"
+
+    if estado == "OK":
+
+        print(
+            f"☑️      {Fore.GREEN + Style.BRIGHT}{recarga['nombre']}: Correcto{Style.RESET_ALL}")
+    else:
+
+        print(
+            f"☑️      {Fore.RED + Style.BRIGHT}{recarga['nombre']}: Incorrecto{Style.RESET_ALL}")
+
+    resultados.append({
+        "oferta": recarga["nombre"],
+        "tipo": "Prepago",
+        "esperado": recarga["mensaje_esperado"],
+        "obtenido": wording_obtenido,
+        "estado": estado
+    })
+
+    boton_cerrar = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["boton_cerrar"])))
+    boton_cerrar = driver.find_element(
+        By.XPATH, xpaths["boton_cerrar"])
+    boton_cerrar.click()
+
+    return idx
+
+
+
+
+
+# VENTANA DATOS PAGO CON MODAL PAGO INVÁLIDO:
+
+def ventana_datos_pago_2(driver, wait, xpaths, ruta_capturas, idx, errores, resultados, recarga):
+
+    wait.until(EC.invisibility_of_element(
+        (By.XPATH, xpaths["anuncio_bait_2"])))
+
+    time.sleep(2)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx).zfill(2)}_Ventana_Pago_{recarga['nombre']}.png"))
+    idx += 1
+
+    wording_actual = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["xpath_texto"]))).text.strip() + " " + wait.until(EC.element_to_be_clickable(
+            (By.XPATH, xpaths["xpath_texto_PUJ"]))).text.strip()
+
+    if recarga["mensaje_esperado"] + " " + xpaths["texto_PUJ"] == wording_actual:
+        print(
+            f"✅ El wording de la recarga de {recarga['nombre']} es correcto, el wording es: {recarga['mensaje_esperado']}  {xpaths['texto_PUJ']}")
+    else:
+        print(
+            f"❌{Fore.RED + Style.BRIGHT} El wording de la recarga {recarga['nombre']} no coincide.\nEsperado:{Style.RESET_ALL} {recarga['mensaje_esperado']} {xpaths['texto_PUJ']}\n{Fore.RED + Style.BRIGHT}Obtenido:{Style.RESET_ALL} {wording_actual}")
+
+        errores.append(recarga['nombre'])
+
+    wording_obtenido = wording_actual
+    estado = "OK" if recarga["mensaje_esperado"] + " " + \
+        xpaths["texto_PUJ"] == wording_obtenido else "ERROR"
+
+    if estado == "OK":
+
+        print(
+            f"☑️      {Fore.GREEN + Style.BRIGHT}{recarga['nombre']}: Correcto{Style.RESET_ALL}")
+    else:
+
+        print(
+            f"☑️      {Fore.RED + Style.BRIGHT}{recarga['nombre']}: Incorrecto{Style.RESET_ALL}")
+
+    resultados.append({
+        "oferta": recarga["nombre"],
+        "tipo": "Prepago",
+        "esperado": recarga["mensaje_esperado"],
+        "obtenido": wording_obtenido,
+        "estado": estado
+    })
+
+    time.sleep(5)
+
+    boton_cerrar = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["boton_cerrar"])))
+    boton_cerrar = driver.find_element(
+        By.XPATH, xpaths["boton_cerrar"])
+    boton_cerrar.click()
+
+    return idx
