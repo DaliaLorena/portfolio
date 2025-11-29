@@ -10,7 +10,7 @@ color: #222;
 header {
 text-align: center;
 padding: 2rem 1rem;
-background: f08e80;
+background: #f08e80;
 color:  black;   
 }
 
@@ -42,7 +42,7 @@ transition: 0.2s;
 
 
 .btn:hover {
-    background: #cf7e95;
+    background: #e0547b;
     color: black;
 }
 
@@ -56,6 +56,7 @@ border: 1px solid ##ee7967;
 margin-top: 1rem;
 
 }
+
 
 
 
