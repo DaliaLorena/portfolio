@@ -1,0 +1,561 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+from PIL import Image
+import tests
+import re
+import pytesseract
+import time
+import os
+import requests
+import json
+import sys
+import pyautogui
+
+
+ruta_capturas = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Recurrencias\\Cuatro Recurrencias"
+os.makedirs(ruta_capturas, exist_ok=True)
+
+with open("C:\\Users\\ord-qa-03\\Desktop\\Scripts BAIT\\scripts_Bait\\xpaths_bait_recurrencias2.json", 'r') as file:
+    config = json.load(file)
+
+xpaths = config["xpaths"]
+recurrencias_datos = config["recurrencias_datos"]
+recurrencias_datos_2 = config["recurrencias_datos_2"]
+recurrencias_datos_3 = config["recurrencias_datos_3"]
+recurrencias_datos_4 = config["recurrencias_datos_4"]
+
+
+# INICIO DE SESIÓN SSO:
+
+def inicio_sesion_sso(driver, wait, xpaths, ruta_capturas):
+
+
+    driver.get("https://mibait.com/login")
+
+
+    time.sleep(5)
+
+    driver.execute_script("document.body.style.zoom='100%'")
+    time.sleep(2)
+
+    driver.save_screenshot(os.path.join(ruta_capturas, "01_pagina_inicio.png"))
+
+    driver.delete_all_cookies()
+
+    boton_aceptar = wait.until(
+        EC.element_to_be_clickable((By.XPATH, xpaths["boton_aceptar"])))
+    boton_aceptar = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar"])
+    print(boton_aceptar)
+    boton_aceptar.click()
+
+    username = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["username"])))
+    username = driver.find_element(By.XPATH, xpaths["username"])
+    username.send_keys("8149007812")
+    time.sleep(5)
+    wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+
+    boton_validar = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["boton_validar"]))).click()
+    wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+    time.sleep(3)
+
+    password = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["password"])))
+    password = driver.find_element(By.XPATH, xpaths["password"])
+    password.send_keys("Pruebas.01")
+    time.sleep(3)
+    anuncio_bait = wait.until(EC.invisibility_of_element_located(
+        (By.XPATH, xpaths["anuncio_bait"])))
+
+    driver.save_screenshot(os.path.join(ruta_capturas, "02_credenciales.png"))
+
+    boton_ingresar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["boton_ingresar"])))
+    boton_ingresar = driver.find_element(By.XPATH, xpaths["boton_ingresar"])
+    boton_ingresar.click()
+    time.sleep(5)
+
+    element = wait.until(
+        EC.element_to_be_clickable((By.XPATH, xpaths["element"])))
+    element = driver.find_element(
+        By.XPATH, xpaths["element"])
+    if "Datos de consumo" in element.text:
+
+        print("✅ Inicio de sesión exitoso.")
+
+        print("✒️   Sección Datos de Consumo")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra la pantalla Datos de Consumo. Texto que muestra: {element.text}")
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, "03_Datos_de_Consumo.png"))
+
+
+
+# MODAL PAGO:
+
+def modal_pago(driver, wait, xpaths, ruta_capturas, ActionChains, idx_captura, recarga):
+    telefono_recarga = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["telefono_recarga"])))
+    telefono_recarga = driver.find_element(
+        By.XPATH, xpaths["telefono_recarga"])
+    telefono_recarga.send_keys("9833674490")
+    time.sleep(5)
+    correo_recarga = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["correo_recarga"])))
+    correo_recarga = driver.find_element(
+        By.XPATH, xpaths["correo_recarga"])
+    correo_recarga.send_keys("dalia.lorena@innovattia.com")
+    print("✅ Datos de línea ingresados.")
+    time.sleep(3)
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Datos_Línea_{recarga['nombre']}.png"))
+    idx_captura += 1
+    boton_siguiente = driver.find_element(
+        By.XPATH, xpaths["boton_siguiente"])
+    boton_siguiente.click()
+    time.sleep(5)
+
+    def check_exists_by_xpath():
+        try:
+            driver.find_element(
+                By.XPATH, xpaths["recarga_proceso"])
+        except NoSuchElementException:
+            return False
+        return True
+
+    if check_exists_by_xpath():
+        boton_aceptar = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, xpaths["recarga_proceso_aceptar"]))
+        )
+        time.sleep(3)
+        driver.save_screenshot(os.path.join(
+            ruta_capturas, f"{str(idx_captura).zfill(2)}_Ventana_Recurrencia_Proceso_{recarga['nombre']}.png"))
+        idx_captura += 1
+        driver.execute_script(
+            "arguments[0].scrollIntoView(true);", boton_aceptar)
+
+        ActionChains(driver).move_to_element(boton_aceptar).perform()
+        boton_aceptar.click()
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Pago_{recarga['nombre']}.png"))
+    idx_captura += 1
+    altura_pagina = driver.execute_script(
+        "return document.querySelector('app-modal-recharge dialog > div > div > div:nth-child(2)').scrollHeight;")
+    mitad_altura = altura_pagina / 4.3
+    driver.execute_script(
+        "document.querySelector('app-modal-recharge dialog > div > div > div:nth-child(2)').scrollTop = arguments[0];",
+        mitad_altura)
+    nombre_tarjeta = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["nombre_tarjeta"])))
+    nombre_tarjeta = driver.find_element(
+        By.XPATH, xpaths["nombre_tarjeta"])
+    nombre_tarjeta.send_keys("Lorena Torres")
+    numero_tarjeta = driver.find_element(
+        By.XPATH, xpaths["numero_tarjeta"])
+    numero_tarjeta.send_keys("4485531263748329")
+    expiracion = driver.find_element(
+        By.XPATH, xpaths["expiracion"])
+    expiracion.send_keys("0326")
+    cvv = driver.find_element(
+        By.XPATH, xpaths["cvv"])
+    cvv.send_keys("123")
+    direccion = driver.find_element(
+        By.XPATH, xpaths["direccion"])
+    direccion.send_keys("C. Mendalde 1114")
+    cp = driver.find_element(
+        By.XPATH, xpaths["cp"])
+    cp.send_keys("03300")
+    time.sleep(3)
+    colonia = driver.find_element(
+        By.XPATH, xpaths["colonia"])
+    colonia.click()
+    colonia_seleccionar = driver.find_element(
+        By.XPATH, xpaths["colonia_seleccionar"])
+    colonia_seleccionar.click()
+    print("✅ Datos de pago ingresados.")
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Pago_Llenado_{recarga['nombre']}.png"))
+    idx_captura += 1
+    ver_detalles = wait.until(EC.element_to_be_clickable((
+        By.XPATH, xpaths["ver_detalles"])))
+    ver_detalles.click()
+
+    time.sleep(10)
+
+    carrito = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["carrito"])))
+
+    check_recurrencia = driver.find_element(
+        By.XPATH, xpaths["check_recurrencia"])
+    check_recurrencia.click()
+
+    check_privacidad = driver.find_element(
+        By.XPATH, xpaths["check_privacidad"])
+    check_privacidad.click()
+    time.sleep(3)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Pagar_Ahora_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    pagar_ahora = driver.find_element(
+        By.XPATH, xpaths["pagar_ahora"])
+    pagar_ahora.click()
+    mensaje_compra = wait.until(
+        EC.visibility_of_element_located((By.CLASS_NAME, "alert-mensaje")))
+    time.sleep(3)
+    texto = mensaje_compra.text.strip()
+    if "Tu recarga está en proceso, por favor evita realizar otro intento y espera la confirmación.\nSi activaste recurrencia asegúrate de tener saldo en tu tarjeta." in texto:
+
+        print(f"✒️     Texto obtenido:\n{repr(texto)}")
+
+    else:
+        print(
+            f"❌ El texto es incorrecto. Texto que muestra: {texto}")
+
+    print("✅ Pago realizado.")
+    time.sleep(3)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Mensaje_Compra_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    mensaje_compra_aceptar = driver.find_element(
+        By.XPATH, xpaths["mensaje_compra_aceptar"])
+    mensaje_compra_aceptar.click()
+    print("✅ Compra de recarga finalizada.")
+    time.sleep(5)
+    return idx_captura
+
+# DESACTIVAR RECARGA:
+
+
+def desactivar_recarga(driver, wait, xpaths, ruta_capturas, idx_captura, recarga):
+
+    togle_desactivar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["togle_desactivar"])))
+    togle_desactivar = driver.find_element(
+        By.XPATH, xpaths["togle_desactivar"])
+    togle_desactivar.click()
+
+    boton_aceptar_desactivar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["boton_aceptar_desactivar"])))
+    boton_aceptar_desactivar = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar_desactivar"])
+    time.sleep(3)
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Desactivar_Recarga_{recarga['nombre']}.png"))
+    idx_captura += 1
+    boton_aceptar_desactivar.click()
+
+    mensaje_desactivar = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["mensaje_desactivar"])))
+    texto_desactivar = driver.find_element(
+        By.XPATH, xpaths["mensaje_desactivar"]).text.strip()
+
+    if "Tu recarga recurrente se desactivó exitosamente." in texto_desactivar:
+        print(f"✒️   {texto_desactivar}")
+    else:
+        print(
+            f"❌ El texto es incorrecto. Texto obtenido:\n{texto_desactivar}")
+
+    time.sleep(3)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Desactivar_Recarga_Mensaje_{recarga['nombre']}.png"))
+    idx_captura += 1
+    time.sleep(3)
+    mensaje_desactivar_aceptar = driver.find_element(
+        By.XPATH, xpaths["mensaje_desactivar_aceptar"])
+    mensaje_desactivar_aceptar.click()
+
+    togle_inactivo = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["togle_inactivo"])))
+    togle_inactivo = driver.find_element(
+        By.XPATH, xpaths["togle_inactivo"]).text.strip()
+    if togle_inactivo in "No":
+        print("El togle está inactivo")
+    else:
+        print("El togle está activo")
+    time.sleep(3)
+    driver.execute_script("document.body.style.zoom='50%'")
+    time.sleep(2)
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Togle_Inactivo_{recarga['nombre']}.png"))
+    idx_captura += 1
+    print("✅ La recurrencia se ha desactivado")
+    time.sleep(3)
+    return idx_captura
+
+
+# ACTIVAR CUARTA RECARGA:
+
+
+def activar_cuarta(driver, wait, xpaths, ruta_capturas, idx_captura, recarga):
+
+    encender_togle_recarga = wait.until(EC.presence_of_element_located(
+        (By.XPATH, xpaths["encender_togle_recarga"])))
+    encender_togle = driver.find_element(By.XPATH, xpaths["encender_togle"])
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, xpaths["encender_togle"])))
+    encender_togle.click()
+    time.sleep(3)
+
+    ventana_3_recurrencias = wait.until(EC.presence_of_element_located(
+        (By.XPATH, xpaths["ventana_3_recurrencias"])))
+
+    ventana_3_recurrencias = driver.find_element(
+        By.XPATH, xpaths["ventana_3_recurrencias"])
+    time.sleep(3)
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Mensaje_3_Recurrencias_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    mensaje_3_recurrencias = driver.find_element(
+        By.XPATH, xpaths["mensaje_3_recurrencias"]).text.strip()
+    time.sleep(3)
+
+    if mensaje_3_recurrencias in "Solo se permiten 3 recargas recurrentes activas.":
+
+        print(f"✅ Se muestra el mensaje:\n{mensaje_3_recurrencias}")
+        time.sleep(3)
+    else:
+        print(
+            f"El mensaje es incorrecto. El texto obtenido es: {mensaje_3_recurrencias}")
+
+    boton_aceptar_3_recurrencias = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar_3_recurrencias"])
+    boton_aceptar_3_recurrencias.click()
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Cuarta_Recurrencia_No_Activada_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    togle_no_activado = driver.find_element(
+        By.XPATH, xpaths["togle_no_activado"]).text.strip()
+    time.sleep(3)
+
+    if togle_no_activado in "Desactivada":
+
+        print("✅ La cuarta recarga no se activó")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ Se activó la cuarta recarga. {togle_no_activado}")
+    return idx_captura
+
+
+# CANCELAR RECURRENCIAS:
+
+
+def cancelar_recurrencia(driver, wait, xpaths, ruta_capturas, idx_captura, recarga):
+
+    print(f"==== Cancelando Recurrencia: {recarga['monto']} ====")
+
+    cancelar = driver.find_element(
+        By.XPATH, xpaths["cancelar"])
+    cancelar.click()
+    time.sleep(5)
+
+    mensaje_cancelar = wait.until(EC.presence_of_element_located(
+        (By.XPATH, xpaths["mensaje_cancelar"])))
+    # Captura:
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Cancelar_1_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    time.sleep(2)
+
+    boton_aceptar_cancelar = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar_cancelar"])
+    boton_aceptar_cancelar.click()
+
+    mensaje_cancelar_exitoso = wait.until(EC.presence_of_element_located(
+        (By.XPATH, xpaths["mensaje_cancelar_exitoso"])))
+    time.sleep(3)
+
+    # Captura:
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Cancelar_Exitoso_1_{recarga['nombre']}.png"))
+    idx_captura += 1
+    time.sleep(2)
+
+    boton_aceptar_cancelar_2 = driver.find_element(
+        By.XPATH, xpaths["boton_aceptar_cancelar_2"])
+    boton_aceptar_cancelar_2.click()
+    time.sleep(3)
+
+    driver.execute_script("document.body.style.zoom='50%'")
+    time.sleep(2)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Recarga_Cancelada_1_{recarga['nombre']}.png"))
+    idx_captura += 1
+    time.sleep(3)
+    return idx_captura
+
+# SELECCIÓN RECARGA:
+
+
+def seleccion_recarga(driver, wait, xpaths, ruta_capturas, idx_captura, recarga):
+
+    def normalizar(texto):
+        return "\n".join(linea.strip() for linea in texto.strip().splitlines() if linea.strip())
+    recargas = driver.find_element(
+        By.XPATH, xpaths["recargas"])
+    recargas.click()
+    time.sleep(5)
+    if "Recargas" in recargas.text:
+
+        print("✒️   Sección Recargas")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra la pantalla Recargas. Texto que muestra: {recargas}")
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Recargas_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    seleccion_recarga = driver.find_element(
+        By.XPATH, recarga["seleccion_recarga"])
+    seleccion_recarga.click()
+    time.sleep(5)
+    print("✅ Recarga elegida.")
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Selección_Recarga_{recarga['nombre']}.png"))
+    idx_captura += 1
+    return idx_captura
+
+# IR A MENÚ -> RECARGAS:
+
+
+def menu_recarga(driver, wait, xpaths, ruta_capturas, idx_captura, recarga):
+
+    menu = wait.until(EC.element_to_be_clickable(
+        (By.XPATH, xpaths["menu"])))
+    menu = driver.find_element(
+        By.XPATH, xpaths["menu"])
+    menu.click()
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Menú_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    menu_recargas = wait.until(
+        EC.presence_of_element_located((By.XPATH, xpaths["menu_recargas"])))
+    menu_recargas = driver.find_element(
+        By.XPATH, xpaths["menu_recargas"])
+    menu_recargas.click()
+
+    time.sleep(5)
+
+    recargas_recurrentes = driver.find_element(
+        By.XPATH, xpaths["recargas_recurrentes"])
+    if "Cargos recurrentes" in recargas_recurrentes.text:
+
+        print("✒️   Sección Cargos recurrentes")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra la pantalla Cargos recurrentes. Texto que muestra: {recargas_recurrentes}")
+    time.sleep(5)
+
+    driver.save_screenshot(os.path.join(
+        ruta_capturas, f"{str(idx_captura).zfill(2)}_Cargos_Recurrentes_{recarga['nombre']}.png"))
+    idx_captura += 1
+
+    recarga_compra = driver.find_element(
+        By.XPATH, recarga["recarga_compra"])
+
+    print("✅ La recarga se encuentra en Cargos recurrentes.")
+    return idx_captura
+
+# VALIDAR TOGLE ENCENDIDO:
+
+
+def validar_togle_encendido(driver, wait, idx_captura, recarga, errores,):
+
+    activada = driver.find_element(
+        By.XPATH, recarga["activada"])
+    time.sleep(3)
+
+    if "Activada" in activada.text:
+
+        print("✒️   El texto del toggle dice \"Activada\"")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra el texto \"Activada\". Texto que muestra: {activada}")
+
+    si_activada = wait.until(EC.presence_of_element_located((
+        By.XPATH, recarga["si_activada"]))).text.strip()
+    time.sleep(3)
+
+    if si_activada == "Sí":
+
+        print(f"✒️   El texto del toggle dice: {si_activada}")
+        time.sleep(3)
+    else:
+        print(
+            f"❌ No se muestra el texto \"Sí\". Texto que muestra: {si_activada}")
+
+        errores.append(recarga['monto'])
+
+    time.sleep(3)
+
+    toggle_encendido = driver.find_element(
+        By.XPATH, recarga["toggle_encendido"])
+
+    color_fondo = driver.execute_script(
+        "return window.getComputedStyle(arguments[0]).backgroundColor;", toggle_encendido)
+
+    if color_fondo.lower() in ("rgb(250, 204, 21)", "#facc15"):
+        print("✅ El toggle está activo")
+    elif color_fondo.lower() in ("rgb(229, 231, 235)", "#e5e7eb"):
+        print("⚠️ El toggle no se activó")
+    else:
+        print(f"❓ Color inesperado: {color_fondo}")
+    return si_activada
+
+
+def resultados_funcion(recarga, errores, resultados):
+
+    estado = "OK" if recarga['si_activada'] == "Sí" else "ERROR"
+
+    if estado == "ERROR":
+        errores.append(recarga['monto'])
+
+    print(
+        f"☑️ {recarga['monto']}: {'Correcto' if estado == 'OK' else 'Incorrecto'}")
+
+    resultados.append({
+        "oferta": recarga["monto"],
+        "tipo": "Prepago",
+        "estado": estado
+    })
