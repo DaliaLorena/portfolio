@@ -1,0 +1,219 @@
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Automatización Cambio de Precios | Funciones</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fafafa; color: #222; }
+header { padding: 1.5rem;background: #f08e80; border-bottom: 1px solid #ddd; text-align: center; }
+header a { text-decoration: none; color: #fafafa; font-weight: bold; }
+.content { max-width: 900px; margin: 2rem auto; padding: 1rem; }
+h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+p { line-height: 1.6; }
+pre { background: #f08e80; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+code { font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+<a href="../index.html">⬅ Volver al portafolio</a>
+</header>
+
+
+<div class="content">
+<h1>Automatización Cambio de Precios - Funciones</h1>
+
+
+<p>
+Este proyecto contiene las funciones utilizadas para la automatización de la validación de los nuevos textos en los productos de
+<strong>Recargas</strong> utilizando Selenium.
+</p>
+
+
+<h2>✔ Código del script</h2>
+<p>Este es el script completo utilizado para la automatización:</p>
+
+
+<pre><code>
+
+
+
+
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+from PIL import Image
+import tests
+import re
+import pytesseract
+import time
+import os
+import requests
+import json
+import sys
+import pyautogui
+from validar_monto_ocr import validar_monto_en_imagen
+from Recurrencias_funciones import (inicio_sesion, inicio_sesion_sso, modal_pago, cancelar_recurrencia,
+                                    seleccion_recarga, menu_recarga, validar_togle_encendido, resultados_funcion, desactivar_recarga, activar_cuarta)
+
+# Configurar Chrome
+options = Options()
+options.add_argument("--start-maximized")
+
+# Inicializar el navegador con WebDriver Manager
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+
+
+# HEADERS:
+
+
+inicial_headers = {
+    "********": "****",
+    "********": "*****************",
+    "Authorization": "Basic *********************************"
+}
+
+driver.execute_cdp_cmd("Network.enable", {})
+
+driver.execute_cdp_cmd(
+    "Network.setExtraHTTPHeaders",
+    {"headers": inicial_headers}
+)
+
+
+# Crear carpeta para capturas
+ruta_capturas = "C:\\Users\\ord-qa-03\\Desktop\\Documentación Pruebas\\Capturas Scripts\\Recurrencias\\04_Cuatro Recurrencias"
+os.makedirs(ruta_capturas, exist_ok=True)
+
+# Cargar JSON:
+with open("C:\\Users\\ord-qa-03\\Desktop\\Scripts BAIT\\scripts_Bait\\xpaths_bait_recurrencias2.json", 'r') as file:
+    config = json.load(file)
+
+try:
+
+    xpaths = config["xpaths"]
+    recurrencias_datos_4 = config["recurrencias_datos_4"]
+
+    wait = WebDriverWait(driver, 60)
+
+    # INICIO DE SESIÓN EN QA CON CREDENCIALES:
+
+    inicio_sesion_sso(driver, wait, xpaths, ruta_capturas)
+
+    time.sleep(5)
+
+    # ELEGIR RECARGA (INICIO FLUJO):
+
+    start_index = next((i for i, r in enumerate(
+        recurrencias_datos_4) if r["nombre"] == "Recurrencia 1"), 0)
+
+    idx_captura = 4
+
+    errores = []
+    resultados = []
+
+    for recarga in recurrencias_datos_4[start_index:]:
+
+        print(f"==== Realizando Recurrencia: {recarga['monto']} ====")
+
+        idx_captura = seleccion_recarga(driver, wait, xpaths,
+                                        ruta_capturas, idx_captura, recarga)
+
+    # COMPRA RECARGA:
+
+        idx_captura = modal_pago(driver, wait, xpaths, ruta_capturas,
+                                 ActionChains, idx_captura, recarga)
+
+        time.sleep(3)
+
+    # MENÚ PARA IR A RECARGAS:
+
+        idx_captura = menu_recarga(
+            driver, wait, xpaths, ruta_capturas, idx_captura, recarga)
+
+    # Validar toggle encendido:
+
+        si_activada = validar_togle_encendido(
+            driver, wait, idx_captura, recarga, errores)
+        recarga["si_activada"] = si_activada
+
+    # ERRORES:
+
+        resultados_funcion(
+            recarga, errores, resultados)
+
+    # DESACTIVAR RECARGA:
+
+        if recarga["monto"] == ("$200"):
+
+            idx_captura = desactivar_recarga(driver, wait, xpaths,
+                                             ruta_capturas, idx_captura, recarga)
+
+    # ACTIVAR CUARTA RECARGA:
+
+    idx_captura = activar_cuarta(
+        driver, wait, xpaths, ruta_capturas, idx_captura, recarga)
+
+    # CANCELAR RECARGA:
+
+    for recarga in recurrencias_datos_4[start_index:]:
+
+        idx_captura = cancelar_recurrencia(driver, wait, xpaths,
+                                           ruta_capturas, idx_captura, recarga)
+
+    # Validar que la recarga ya no se encuentre:
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.invisibility_of_element_located(
+                    (By.XPATH, recarga["recarga_compra_cancel"]))
+            )
+            print("✅ La recarga se canceló correctamente.")
+        except TimeoutException:
+            print("❌ La recarga no se canceló.")
+
+    if errores:
+
+        print(
+            f"⚠️ Prueba de Cuatro Recurrencias completada con capturas.\nErrores encontrados en: ")
+        for monto in errores:
+            print(f" - {monto}")
+
+    else:
+
+        print("🚀       Prueba de Cuatro Recurrencias completada con capturas.")
+
+
+except Exception as e:
+    print("❌ Error durante la prueba:", repr(e))
+    driver.save_screenshot("capturas/99_error.png")
+
+
+finally:
+    with open("resultados_temp.json", "w", encoding="utf-8-sig") as f:
+        json.dump(resultados, f, ensure_ascii=False, indent=4)
+    driver.quit()
+
+
+
+
+
+</code></pre>
+
+
+
+</div>
+</body>
+</html>
